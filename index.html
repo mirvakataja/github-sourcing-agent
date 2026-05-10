@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GitHub Sourcing Agent</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="eyebrow">GitHub sourcing</p>
+        <h1>Etsi Suomessa olevia GitHub-profiileja teknologioiden perusteella</h1>
+        <p class="lead">
+          Syota boolean-haku teknologioista, niin tyokalu hakee GitHub-repositorioista
+          ehdokkaita, tarkistaa profiilin sijainnin ja listaa usein kaytetyt teknologiat.
+        </p>
+      </section>
+
+      <section class="panel" aria-labelledby="search-heading">
+        <h2 id="search-heading">Haku</h2>
+        <form id="search-form" class="search-form">
+          <label for="query">
+            Teknologiahaku
+            <input
+              id="query"
+              name="query"
+              type="text"
+              placeholder='react AND typescript NOT java'
+              value="react AND typescript"
+              autocomplete="off"
+              required
+            >
+          </label>
+
+          <div class="form-row">
+            <label for="limit">
+              Maksimiprofiilit
+              <input id="limit" name="limit" type="number" min="1" max="50" value="20">
+            </label>
+
+            <label for="token">
+              GitHub token (valinnainen)
+              <input id="token" name="token" type="password" placeholder="Nostaa API-rajoja">
+            </label>
+          </div>
+
+          <p class="help">
+            Tuetut operaattorit: <strong>AND</strong>, <strong>OR</strong>, <strong>NOT</strong>
+            ja sulkeet. Pelkka vali toimii kuten AND. Esimerkki:
+            <code>(python OR go) AND kubernetes NOT wordpress</code>
+          </p>
+
+          <button id="submit-button" type="submit">Hae profiileja</button>
+        </form>
+      </section>
+
+      <section class="status-panel" aria-live="polite">
+        <p id="status" data-variant="idle">Anna teknologiahaku ja kaynnista haku.</p>
+      </section>
+
+      <section id="results" class="results" aria-label="Loydetyt GitHub-profiilit"></section>
+    </main>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
