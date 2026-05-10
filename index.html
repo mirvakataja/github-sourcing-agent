@@ -12,8 +12,8 @@
         <p class="eyebrow">GitHub sourcing</p>
         <h1>Etsi Suomessa olevia GitHub-profiileja teknologioiden perusteella</h1>
         <p class="lead">
-          Syota boolean-haku teknologioista, niin tyokalu hakee GitHub-repositorioista
-          ehdokkaita, tarkistaa profiilin sijainnin ja listaa usein kaytetyt teknologiat.
+          Syota boolean-haku teknologioista, niin palvelin hakee suomalaisia GitHub-ehdokkaita,
+          tarkistaa repositorioiden teknologiat ja listaa loydetyt profiilit.
         </p>
       </section>
 
@@ -33,22 +33,16 @@
             >
           </label>
 
-          <div class="form-row">
-            <label for="limit">
-              Maksimiprofiilit
-              <input id="limit" name="limit" type="number" min="1" max="50" value="20">
-            </label>
-
-            <label for="token">
-              GitHub token (valinnainen)
-              <input id="token" name="token" type="password" placeholder="Nostaa API-rajoja">
-            </label>
-          </div>
+          <label for="limit" class="limit-field">
+            Maksimiprofiilit
+            <input id="limit" name="limit" type="number" min="1" max="50" value="20">
+          </label>
 
           <p class="help">
             Tuetut operaattorit: <strong>AND</strong>, <strong>OR</strong>, <strong>NOT</strong>
             ja sulkeet. Pelkka vali toimii kuten AND. Esimerkki:
             <code>(python OR go) AND kubernetes NOT wordpress</code>
+            GitHub-token asetetaan palvelimelle <code>GITHUB_TOKEN</code>-ymparistomuuttujalla.
           </p>
 
           <button id="submit-button" type="submit">Hae profiileja</button>
