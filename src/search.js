@@ -1,6 +1,8 @@
 const BOOLEAN_OPERATORS = new Set(["AND", "OR", "NOT"]);
 
 const TECHNOLOGY_ALIASES = new Map([
+  ["next", "nextjs"],
+  ["next.js", "nextjs"],
   ["js", "javascript"],
   ["node", "nodejs"],
   ["node.js", "nodejs"],
@@ -13,6 +15,52 @@ const TECHNOLOGY_ALIASES = new Map([
   ["reactjs", "react"],
   ["vuejs", "vue"],
   ["postgres", "postgresql"]
+]);
+
+const GITHUB_LANGUAGE_QUALIFIERS = new Map([
+  ["angular", "typescript"],
+  ["c", "c"],
+  ["c#", "c#"],
+  ["c++", "c++"],
+  ["css", "css"],
+  ["django", "python"],
+  ["go", "go"],
+  ["html", "html"],
+  ["java", "java"],
+  ["javascript", "javascript"],
+  ["kotlin", "kotlin"],
+  ["nextjs", "typescript"],
+  ["nodejs", "javascript"],
+  ["php", "php"],
+  ["python", "python"],
+  ["r", "r"],
+  ["rails", "ruby"],
+  ["react", "typescript"],
+  ["ruby", "ruby"],
+  ["rust", "rust"],
+  ["scala", "scala"],
+  ["shell", "shell"],
+  ["swift", "swift"],
+  ["typescript", "typescript"],
+  ["vue", "typescript"]
+]);
+
+const TECHNOLOGY_KEYWORDS = new Map([
+  ["angular", ["angular"]],
+  ["aws", ["aws", "amazon web services"]],
+  ["azure", ["azure"]],
+  ["django", ["django"]],
+  ["docker", ["docker"]],
+  ["graphql", ["graphql"]],
+  ["kubernetes", ["kubernetes", "k8s"]],
+  ["nextjs", ["nextjs", "next.js", "next js"]],
+  ["nodejs", ["nodejs", "node.js", "node js"]],
+  ["postgresql", ["postgresql", "postgres"]],
+  ["rails", ["rails", "ruby on rails"]],
+  ["react", ["react", "reactjs", "react.js", "react native"]],
+  ["svelte", ["svelte", "sveltekit"]],
+  ["terraform", ["terraform"]],
+  ["vue", ["vue", "vuejs", "vue.js"]]
 ]);
 
 const FINLAND_LOCATION_TERMS = [
@@ -36,6 +84,32 @@ const FINLAND_LOCATION_TERMS = [
   "seinajoki",
   "kotka",
   "salo"
+];
+
+const FINLAND_LOCATION_SEARCH_TERMS = [
+  "Finland",
+  "Suomi",
+  "Helsinki",
+  "Espoo",
+  "Tampere",
+  "Turku",
+  "Oulu",
+  "Vantaa",
+  "Jyvaskyla",
+  "Jyväskylä",
+  "Lahti",
+  "Kuopio",
+  "Pori",
+  "Joensuu",
+  "Lappeenranta",
+  "Vaasa",
+  "Rovaniemi",
+  "Hameenlinna",
+  "Hämeenlinna",
+  "Seinajoki",
+  "Seinäjoki",
+  "Kotka",
+  "Salo"
 ];
 
 export class BooleanExpressionError extends Error {
@@ -274,11 +348,37 @@ export function buildRepositorySearchQuery(expression) {
   return `${searchableTerms.join(" OR ")} archived:false`;
 }
 
+export function buildUserSearchQueries(expression) {
+  const positiveTerms = extractPositiveTerms(expression);
+  if (positiveTerms.length === 0) {
+    throw new BooleanExpressionError("Hakuehto tarvitsee ainakin yhden positiivisen teknologian.");
+  }
+
+  const languageTerms = [...new Set(positiveTerms.map(toGitHubLanguageQualifier).filter(Boolean))];
+  const queries = [];
+
+  for (const language of languageTerms) {
+    for (const location of FINLAND_LOCATION_SEARCH_TERMS) {
+      queries.push(`location:${toGitHubSearchTerm(location)} type:user language:${toGitHubSearchTerm(language)}`);
+    }
+  }
+
+  for (const location of FINLAND_LOCATION_SEARCH_TERMS) {
+    queries.push(`location:${toGitHubSearchTerm(location)} type:user`);
+  }
+
+  return [...new Set(queries)];
+}
+
 function toGitHubSearchTerm(term) {
   if (/^[a-z0-9+#.]+$/i.test(term)) {
     return term;
   }
   return `"${term.replace(/"/g, "")}"`;
+}
+
+function toGitHubLanguageQualifier(term) {
+  return GITHUB_LANGUAGE_QUALIFIERS.get(normalizeTechnology(term));
 }
 
 export function isFinlandLocation(location) {
@@ -307,11 +407,32 @@ export function summarizeTechnologies(repositories, languageMaps = new Map()) {
     for (const topic of repository.topics ?? []) {
       addTechnologyCount(counts, topic, 1);
     }
+
+    for (const detectedTechnology of detectTechnologiesFromRepositoryText(repository)) {
+      addTechnologyCount(counts, detectedTechnology, 1);
+    }
   }
 
   return [...counts.entries()]
     .map(([name, score]) => ({ name, score }))
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+}
+
+function detectTechnologiesFromRepositoryText(repository) {
+  const text = normalizeText([
+    repository.name,
+    repository.description,
+    repository.homepage
+  ].filter(Boolean).join(" "));
+  const detected = [];
+
+  for (const [technology, keywords] of TECHNOLOGY_KEYWORDS) {
+    if (keywords.some((keyword) => text.includes(normalizeText(keyword)))) {
+      detected.push(technology);
+    }
+  }
+
+  return detected;
 }
 
 function addTechnologyCount(counts, value, increment) {

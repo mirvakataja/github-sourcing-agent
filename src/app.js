@@ -1,6 +1,6 @@
 import {
   BooleanExpressionError,
-  buildRepositorySearchQuery,
+  buildUserSearchQueries,
   evaluateBooleanExpression,
   isFinlandLocation,
   parseBooleanExpression,
@@ -36,10 +36,9 @@ async function runSearch() {
 
   try {
     const parsedExpression = parseBooleanExpression(expression);
-    const repositoryQuery = buildRepositorySearchQuery(parsedExpression);
-    const candidateLogins = await findCandidateLogins(repositoryQuery, profileLimit * 4, token);
+    const candidateLogins = await findCandidateLogins(parsedExpression, profileLimit * 10, token);
 
-    setStatus(`Loytyi ${candidateLogins.length} ehdokasta. Tarkistetaan profiilien sijainti ja teknologiat...`, "loading");
+    setStatus(`Loytyi ${candidateLogins.length} suomalaista ehdokasta. Tarkistetaan teknologiat...`, "loading");
 
     const profiles = [];
     for (const login of candidateLogins) {
@@ -56,7 +55,7 @@ async function runSearch() {
     }
 
     if (profiles.length === 0) {
-      setStatus("Ei osumia. Kokeile laajempaa teknologiahakua tai GitHub-tokenia rate limitin nostamiseksi.", "empty");
+      setStatus("Ei osumia loydetyista suomalaisista ehdokkaista. Kokeile laajempaa hakua tai suurempaa maksimiprofiilien maaraa.", "empty");
     } else {
       setStatus(`Valmis. Naytetaan ${profiles.length} profiilia.`, "success");
     }
@@ -70,34 +69,40 @@ async function runSearch() {
   }
 }
 
-async function findCandidateLogins(repositoryQuery, wantedCount, token) {
+async function findCandidateLogins(expressionAst, wantedCount, token) {
   const logins = new Set();
-  let page = 1;
+  const userSearchQueries = buildUserSearchQueries(expressionAst);
 
-  while (logins.size < wantedCount && page <= 5) {
-    const params = new URLSearchParams({
-      q: repositoryQuery,
-      sort: "updated",
-      order: "desc",
-      per_page: "100",
-      page: String(page)
-    });
-    const data = await githubRequest(`/search/repositories?${params}`, token);
+  for (const query of userSearchQueries) {
+    let page = 1;
+    while (logins.size < wantedCount && page <= 2) {
+      const params = new URLSearchParams({
+        q: query,
+        sort: "followers",
+        order: "desc",
+        per_page: "100",
+        page: String(page)
+      });
+      const data = await githubRequest(`/search/users?${params}`, token);
 
-    for (const repository of data.items ?? []) {
-      const owner = repository.owner;
-      if (owner?.type === "User" && owner.login) {
-        logins.add(owner.login);
+      for (const user of data.items ?? []) {
+        if (user.type === "User" && user.login) {
+          logins.add(user.login);
+        }
+        if (logins.size >= wantedCount) {
+          break;
+        }
       }
-      if (logins.size >= wantedCount) {
+
+      if (!data.items || data.items.length === 0) {
         break;
       }
+      page += 1;
     }
 
-    if (!data.items || data.items.length === 0) {
+    if (logins.size >= wantedCount) {
       break;
     }
-    page += 1;
   }
 
   return [...logins];

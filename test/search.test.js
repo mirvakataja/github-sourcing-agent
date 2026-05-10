@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   buildRepositorySearchQuery,
+  buildUserSearchQueries,
   evaluateBooleanExpression,
   extractPositiveTerms,
   isFinlandLocation,
@@ -28,6 +29,13 @@ describe("boolean technology search", () => {
 
   it("builds a repository search query from positive terms", () => {
     assert.equal(buildRepositorySearchQuery("react OR \"machine learning\""), 'react OR "machine learning" archived:false');
+  });
+
+  it("builds Finland-first user search queries", () => {
+    const queries = buildUserSearchQueries("react");
+
+    assert.equal(queries[0], "location:Finland type:user language:typescript");
+    assert.ok(queries.includes("location:Finland type:user"));
   });
 });
 
@@ -61,5 +69,13 @@ describe("profile filtering helpers", () => {
         { name: "nodejs", score: 1 }
       ]
     );
+  });
+
+  it("detects common frameworks from repository text", () => {
+    const repositories = [
+      { name: "customer-portal", description: "React Native mobile app", language: "TypeScript", topics: [] }
+    ];
+
+    assert.equal(summarizeTechnologies(repositories).some((technology) => technology.name === "react"), true);
   });
 });

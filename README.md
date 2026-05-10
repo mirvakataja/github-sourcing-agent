@@ -18,6 +18,10 @@ npm start
 
 Avaa selaimessa <http://localhost:5173>.
 
+Jos ajat sovellusta Cursor Cloudissa tai muussa etaymparistossa, oman koneesi `localhost`
+ei osoita suoraan pilvikoneeseen. Kaynnista ensin `npm start` pilviymparistossa ja avaa
+sen jalkeen Cursorin tarjoama port preview / forwarded port portille `5173`.
+
 Voit kayttaa hakua ilman tokenia, mutta GitHubin anonyymit API-rajat tulevat nopeasti vastaan.
 Syota kenttaan GitHub Personal Access Token, jos haluat suuremman rate limitin. Tokenia ei tallenneta
 palvelimelle tai selaimen pysyvaan muistiin; se lahetetaan vain GitHub API -kutsujen Authorization-headerissa.
